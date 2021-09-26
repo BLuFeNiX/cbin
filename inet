@@ -33,7 +33,7 @@ if $INTERACTIVE; then
     echo "running $COMMAND with internet permissions"
     sudo -E -g internet $COMMAND "$@"
 elif command -v pkexec; then
-    pkexec sudo -u $USER -g internet DISPLAY="$DISPLAY" XAUTHORITY="$XAUTHORITY" $COMMAND "$@"
+    pkexec sudo -u $USER -g internet -- sh -c "pulseaudio --check || pulseaudio -D; DISPLAY=\"$DISPLAY\" XAUTHORITY=\"$XAUTHORITY\" $COMMAND $@"
 elif command -v gksu; then
     gksu -k -- sudo -E -u $USER -g internet DISPLAY="$DISPLAY" XAUTHORITY="$XAUTHORITY" $COMMAND "$@"
 fi
