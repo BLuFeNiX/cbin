@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+
+# write to an arbitrary, unused file descriptor
+exec 19>$HOME/inet.log
+BASH_XTRACEFD=19
+
+set -x
+
 COMMAND=$(basename "$0")
 SCRIPT_DIR=$(cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd)
 
@@ -30,10 +37,14 @@ fi
 
 
 if $INTERACTIVE; then
-    echo "running $COMMAND with internet permissions"
+    echo "running [ $COMMAND $@ ] with internet permissions"
     sudo -E -g internet $COMMAND "$@"
 elif command -v pkexec; then
-    pkexec sudo -u $USER -g internet -- sh -c "pulseaudio --check || pulseaudio -D; DISPLAY=\"$DISPLAY\" XAUTHORITY=\"$XAUTHORITY\" $COMMAND $@"
+    ENV="DISPLAY=$DISPLAY XAUTHORITY=$XAUTHORITY DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS __NV_PRIME_RENDER_OFFLOAD=$__NV_PRIME_RENDER_OFFLOAD __GLX_VENDOR_LIBRARY_NAME=$__GLX_VENDOR_LIBRARY_NAME"
+    pkexec sudo -i -u $USER -g internet -- sh -c "pulseaudio --check || pulseaudio -D; $ENV $COMMAND $@"
+    # pkexec sudo -i -u $USER -g internet -- sh -c "pulseaudio --check || pulseaudio -D; DISPLAY=\"$DISPLAY\" XAUTHORITY=\"$XAUTHORITY\" __NV_PRIME_RENDER_OFFLOAD=\"$__NV_PRIME_RENDER_OFFLOAD\" __GLX_VENDOR_LIBRARY_NAME=\"$__GLX_VENDOR_LIBRARY_NAME\" $COMMAND $@"
+    # pkexec sudo -u $USER -g internet -- sh -c "pulseaudio --check || pulseaudio -D; DISPLAY=\"$DISPLAY\" XAUTHORITY=\"$XAUTHORITY\" $COMMAND $@"
+    # pkexec sudo su -g internet $(echo " $(groups)" | sed "s/ / -G /g") --login $USER -c "pulseaudio --check || pulseaudio -D; DISPLAY=\"$DISPLAY\" XAUTHORITY=\"$XAUTHORITY\" /usr/games/steam"
 elif command -v gksu; then
     gksu -k -- sudo -E -u $USER -g internet DISPLAY="$DISPLAY" XAUTHORITY="$XAUTHORITY" $COMMAND "$@"
 fi
